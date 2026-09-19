@@ -112,6 +112,7 @@ func callbackHandler(c *gin.Context) {
 	session.Delete("redirect")
 
 	session.Set("jhid_auth", true)
+	session.Set("jhid_uid", claims.Uid)
 	session.Save()
 
 	if redir != nil {
@@ -125,6 +126,8 @@ func EnsureLogin(redirectFail bool) func(c *gin.Context) {
 	return (func(c *gin.Context) {
 		session := sessions.Default(c)
 		if session.Get("jhid_auth") == true {
+			// Set the UID on the context
+			c.Set("uid", session.Get("jhid_uid").(string))
 			c.Next()
 		} else {
 			if redirectFail {
