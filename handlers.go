@@ -15,7 +15,11 @@ func LoginHandler(c *gin.Context) {
 	state := rand.Text()
 	nonce := rand.Text()
 	codeVerifier := oauth2.GenerateVerifier()
+
 	session := sessions.Default(c)
+	if c.Query("returnTo") != "" {
+		session.Set("redirect", c.Query("returnTo"))
+	}
 	session.Set("jhid_oauth_state", state)
 	session.Set("jhid_oauth_nonce", nonce)
 	session.Set("jhid_oauth_code_verifier", codeVerifier)
@@ -27,23 +31,26 @@ func CallbackHandler(c *gin.Context) {
 	session := sessions.Default(c)
 	state := session.Get("jhid_oauth_state")
 	nonce := session.Get("jhid_oauth_nonce")
-	codeVerifier := session.Get("jhid_oauth_code_verifier").(string)
+	codeVerifier := session.Get("jhid_oauth_code_verifier")
 
-	if c.Query("state") != state {
-		log.Println("State invalid")
+	if c.Query("state") != state || codeVerifier == nil {
+		log.Println("State invalid or verifier was not stored")
 		// TODO: Proper pages
 		c.HTML(500, "oidcerror.tmpl", gin.H{
-			"error": "",
+			"error": "ERR_INVALID_STATE",
 		})
-		c.AbortWithStatus(500)
+		c.Abort()
 		return
 	}
 
 	// Token exchange
-	tok, err := config.Exchange(c, c.Query("code"), oauth2.VerifierOption(codeVerifier))
+	tok, err := config.Exchange(c, c.Query("code"), oauth2.VerifierOption(codeVerifier.(string)))
 	if err != nil {
 		log.Println("Token exchange failed with error", err)
-		c.AbortWithStatus(500)
+		c.HTML(500, "oidcerror.tmpl", gin.H{
+			"error": "ERR_AUTH",
+		})
+		c.Abort()
 		return
 	}
 
@@ -51,13 +58,19 @@ func CallbackHandler(c *gin.Context) {
 	rawIdToken, ok := tok.Extra("id_token").(string)
 	if !ok {
 		log.Println("Failed to get ID token", err)
-		c.AbortWithStatus(500)
+		c.HTML(500, "oidcerror.tmpl", gin.H{
+			"error": "ERR_AUTH",
+		})
+		c.Abort()
 		return
 	}
 	idToken, err := verifier.Verify(c, rawIdToken)
 	if err != nil {
 		log.Println("Token verification failed", err)
-		c.AbortWithStatus(500)
+		c.HTML(500, "oidcerror.tmpl", gin.H{
+			"error": "ERR_AUTH",
+		})
+		c.Abort()
 		return
 	}
 
@@ -85,12 +98,21 @@ func CallbackHandler(c *gin.Context) {
 		userFunc(claims.Uid, claims.Name, claims.Email)
 	}
 
+	// Clear session data of oauth related state
 	session.Delete("jhid_oauth_nonce")
 	session.Delete("jhid_oauth_state")
 	session.Delete("jhid_oauth_code_verifier")
+	redir := session.Get("redirect")
+	session.Delete("redirect")
 
 	session.Set("jhid_auth", true)
 	session.Save()
+
+	if redir != nil {
+		c.Redirect(307, redir.(string))
+	} else {
+		c.Redirect(307, defaultRedirect)
+	}
 }
 
 func EnsureLogin(redirectFail bool) func(c *gin.Context) {
@@ -104,7 +126,10 @@ func EnsureLogin(redirectFail bool) func(c *gin.Context) {
 				c.Abort()
 				return
 			} else {
-				c.AbortWithStatus(401)
+				c.HTML(401, "autherror.tmpl", gin.H{
+					"error": "ERR_AUTH",
+				})
+				c.Abort()
 				return
 			}
 		}

@@ -21,27 +21,45 @@ func createRandomString(n int) (string, error) {
 }
 
 var (
-	config   oauth2.Config
-	userFunc func(userid string, name string, email string)
-	verifier oidc.IDTokenVerifier
+	config          oauth2.Config
+	userFunc        func(userid string, name string, email string)
+	verifier        oidc.IDTokenVerifier
+	defaultRedirect string
 )
 
-func Configure(r *gin.Engine, app_url string, scopes []string) {
-	r.GET("/auth/v2/login", LoginHandler)
-	r.GET("/auth/v2/verify", CallbackHandler)
-
-	provider, err := oidc.NewProvider(context.Background(), os.Getenv("OIDC_ISSUER"))
+func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool) {
+	issuer := os.Getenv("OIDC_ISSUER")
 	clientID := os.Getenv("OIDC_CLIENT_ID")
+	clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
+
+	if issuer == "" || clientID == "" || clientSecret == "" {
+		if stubs_on_unconfigured {
+			log.Println("[JHID] WARNING: OIDC not set up due to missing environment variables. Falling back to stubs")
+			startStubs(r)
+			return
+		} else {
+			log.Fatal("[JHID] One or more requried environment variables are missing. See docs for more information")
+		}
+	}
+
+	provider, err := oidc.NewProvider(context.Background(), issuer)
 	verifier = *provider.Verifier(&oidc.Config{ClientID: clientID})
+	defaultRedirect = default_redirect
+
 	if err != nil {
-		log.Fatal("Provider resolution failed with error", err)
+		log.Fatal("[JHID] Provider resolution failed with error", err)
 	}
 
 	config = oauth2.Config{
 		ClientID:     clientID,
-		ClientSecret: os.Getenv("OIDC_CLIENT_SECRET"),
+		ClientSecret: clientSecret,
 		Endpoint:     provider.Endpoint(),
 		RedirectURL:  app_url + "/auth/v2/verify",
 		Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
 	}
+
+	r.GET("/auth/v2/login", LoginHandler)
+	r.GET("/auth/v2/verify", CallbackHandler)
+
+	log.Println("[JHID] Configured successfully")
 }
