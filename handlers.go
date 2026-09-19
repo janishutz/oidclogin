@@ -132,9 +132,7 @@ func EnsureLogin(redirectFail bool) func(c *gin.Context) {
 				c.Abort()
 				return
 			} else {
-				c.HTML(401, "autherror.tmpl", gin.H{
-					"error": "ERR_AUTH",
-				})
+				c.HTML(401, "autherror.tmpl", gin.H{})
 				c.Abort()
 				return
 			}
