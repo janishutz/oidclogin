@@ -27,6 +27,7 @@ var (
 	defaultRedirect string
 )
 
+// Configure and set up the login SDK.
 func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool) {
 	issuer := os.Getenv("OIDC_ISSUER")
 	clientID := os.Getenv("OIDC_CLIENT_ID")
@@ -58,8 +59,22 @@ func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_
 		Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
 	}
 
-	r.GET("/auth/v2/login", LoginHandler)
-	r.GET("/auth/v2/verify", CallbackHandler)
+	r.GET("/auth/v2/login", loginHandler)
+	r.GET("/auth/v2/verify", callbackHandler)
 
 	log.Println("[JHID] Configured successfully")
+}
+
+func ErrorHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+
+		if len(c.Errors) > 0 {
+			log.Println("Error during route:", c.Errors.Last().Err)
+
+			c.JSON(500, gin.H{
+				"error": "Internal Server Error",
+			})
+		}
+	}
 }

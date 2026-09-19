@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func LoginHandler(c *gin.Context) {
+func loginHandler(c *gin.Context) {
 	// Set up user session
 	state := rand.Text()
 	nonce := rand.Text()
@@ -27,7 +27,7 @@ func LoginHandler(c *gin.Context) {
 	c.Redirect(301, config.AuthCodeURL(state, oidc.Nonce(nonce), oauth2.S256ChallengeOption(codeVerifier)))
 }
 
-func CallbackHandler(c *gin.Context) {
+func callbackHandler(c *gin.Context) {
 	session := sessions.Default(c)
 	state := session.Get("jhid_oauth_state")
 	nonce := session.Get("jhid_oauth_nonce")
@@ -83,14 +83,20 @@ func CallbackHandler(c *gin.Context) {
 	}
 	if err := idToken.Claims(&claims); err != nil {
 		log.Println("Token claims generation failed", err)
-		c.AbortWithStatus(500)
+		c.HTML(500, "oidcerror.tmpl", gin.H{
+			"error": "ERR_AUTH",
+		})
+		c.Abort()
 		return
 	}
 
 	// Verify NONCE
 	if nonce != claims.Nonce {
 		log.Println("Token verificcation failed", err)
-		c.AbortWithStatus(500)
+		c.HTML(500, "oidcerror.tmpl", gin.H{
+			"error": "ERR_AUTH",
+		})
+		c.Abort()
 		return
 	}
 
