@@ -62,6 +62,7 @@ func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_
 	r.GET("/auth/v2/login", loginHandler)
 	r.GET("/auth/v2/verify", callbackHandler)
 	r.GET("/auth/v2/check", EnsureLogin(false), func(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) })
+	r.GET("/auth/v2/logout", logoutHandler)
 
 	log.Println("[JHID] Configured successfully")
 }

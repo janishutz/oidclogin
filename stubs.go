@@ -9,6 +9,7 @@ func startStubs(r *gin.Engine) {
 	r.GET("/auth/v2/login", stubsHandler)
 	r.GET("/auth/v2/verify", stubsHandler)
 	r.GET("/auth/v2/check", EnsureLogin(false), func(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) })
+	r.GET("/auth/v2/logout", logoutHandler)
 }
 
 func stubsHandler(c *gin.Context) {

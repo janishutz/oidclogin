@@ -122,6 +122,14 @@ func callbackHandler(c *gin.Context) {
 	}
 }
 
+func logoutHandler(c *gin.Context) {
+	session := sessions.Default(c)
+	session.Clear()
+	session.Save()
+}
+
+// Ensure that a user is currently logged in.
+// If redirectFail is set, then if not, the user is redirected.
 func EnsureLogin(redirectFail bool) func(c *gin.Context) {
 	return (func(c *gin.Context) {
 		session := sessions.Default(c)
