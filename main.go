@@ -29,13 +29,19 @@ var (
 	defaultRedirect string
 )
 
-// Configure and set up the login SDK. The user_function is used to create or update a user
-func Configure(r *gin.Engine, app_url string, default_redirect string, user_function UserFunc, stubs_on_unconfigured bool) {
+// Wraps the normal configure function, but also gives you access to change the User Function, which is called upon login.
+// It is used to create or update a user.
+func ConfigureFull(r *gin.Engine, app_url string, default_redirect string, user_function UserFunc, stubs_on_unconfigured bool) {
+	userFunc = user_function
+	Configure(r, app_url, default_redirect, stubs_on_unconfigured)
+}
+
+// Configure and set up the login SDK
+func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool) {
 	issuer := os.Getenv("OIDC_ISSUER")
 	clientID := os.Getenv("OIDC_CLIENT_ID")
 	clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
 	defaultRedirect = default_redirect
-	userFunc = user_function
 
 	if issuer == "" || clientID == "" || clientSecret == "" {
 		if stubs_on_unconfigured {
