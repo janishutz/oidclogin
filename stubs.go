@@ -1,6 +1,8 @@
 package oidclogin
 
 import (
+	"log"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -15,13 +17,19 @@ func startStubs(r *gin.Engine) {
 func stubsHandler(c *gin.Context) {
 	redir := c.Query("returnTo")
 	session := sessions.Default(c)
-	userFunc("stubs", "Stubs User", "example@example.com")
+	if userFunc != nil {
+		userFunc("stubs", "Stubs User", "example@example.com")
+	} else {
+		log.Println("[JHID] WARNING: No user function defined")
+	}
 	session.Set("jhid_auth", true)
 	session.Set("jhid_uid", "stubs")
 	session.Save()
 	if redir != "" {
+		log.Println("[JHID] Redirecting to ", redir)
 		c.Redirect(307, redir)
 	} else {
+		log.Println("[JHID] Redirecting to ", defaultRedirect, " (default redirect)")
 		c.Redirect(307, defaultRedirect)
 	}
 }

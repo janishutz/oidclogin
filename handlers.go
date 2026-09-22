@@ -102,6 +102,8 @@ func callbackHandler(c *gin.Context) {
 
 	if userFunc != nil {
 		userFunc(claims.Uid, claims.Name, claims.Email)
+	} else {
+		log.Println("[JHID] WARNING: No user function defined")
 	}
 
 	// Clear session data of oauth related state
