@@ -20,18 +20,22 @@ func createRandomString(n int) (string, error) {
 	return base64.URLEncoding.EncodeToString(s), nil
 }
 
+type UserFunc func(userid string, name string, email string)
+
 var (
 	config          oauth2.Config
-	userFunc        func(userid string, name string, email string)
+	userFunc        UserFunc
 	verifier        oidc.IDTokenVerifier
 	defaultRedirect string
 )
 
-// Configure and set up the login SDK.
-func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool) {
+// Configure and set up the login SDK. The user_function is used to create or update a user
+func Configure(r *gin.Engine, app_url string, default_redirect string, user_function UserFunc, stubs_on_unconfigured bool) {
 	issuer := os.Getenv("OIDC_ISSUER")
 	clientID := os.Getenv("OIDC_CLIENT_ID")
 	clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
+	defaultRedirect = default_redirect
+	userFunc = user_function
 
 	if issuer == "" || clientID == "" || clientSecret == "" {
 		if stubs_on_unconfigured {
@@ -45,7 +49,6 @@ func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_
 
 	provider, err := oidc.NewProvider(context.Background(), issuer)
 	verifier = *provider.Verifier(&oidc.Config{ClientID: clientID})
-	defaultRedirect = default_redirect
 
 	if err != nil {
 		log.Fatal("[JHID] Provider resolution failed with error", err)
