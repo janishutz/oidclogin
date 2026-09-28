@@ -31,13 +31,13 @@ var (
 
 // Wraps the normal configure function, but also gives you access to change the User Function, which is called upon login.
 // It is used to create or update a user.
-func ConfigureFull(r *gin.Engine, app_url string, default_redirect string, user_function UserFunc, stubs_on_unconfigured bool) {
+func ConfigureFull(r *gin.Engine, app_url string, default_redirect string, user_function UserFunc, stubs_on_unconfigured bool, check_middleware *func(c *gin.Context)) {
 	userFunc = user_function
-	Configure(r, app_url, default_redirect, stubs_on_unconfigured)
+	Configure(r, app_url, default_redirect, stubs_on_unconfigured, check_middleware)
 }
 
 // Configure and set up the login SDK
-func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool) {
+func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool, check_middleware *func(c *gin.Context)) {
 	issuer := os.Getenv("OIDC_ISSUER")
 	clientID := os.Getenv("OIDC_CLIENT_ID")
 	clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
@@ -70,7 +70,12 @@ func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_
 
 	r.GET("/auth/v2/login", loginHandler)
 	r.GET("/auth/v2/verify", callbackHandler)
-	r.GET("/auth/v2/check", EnsureLogin(false), func(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) })
+	check_finalizer := func(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) }
+	if check_middleware == nil {
+		r.GET("/auth/v2/check", EnsureLogin(false), check_finalizer)
+	} else {
+		r.GET("/auth/v2/check", EnsureLogin(false), *check_middleware, check_finalizer)
+	}
 	r.GET("/auth/v2/logout", logoutHandler)
 
 	log.Println("[JHID] Configured successfully")
