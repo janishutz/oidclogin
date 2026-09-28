@@ -128,6 +128,15 @@ func logoutHandler(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Clear()
 	session.Save()
+	redir := ""
+	if c.Query("returnTo") != "" {
+		redir = c.Query("returnTo")
+	}
+	if redir != "" {
+		c.Redirect(307, redir)
+	} else {
+		c.Redirect(307, defaultRedirect)
+	}
 }
 
 // Ensure that a user is currently logged in.
