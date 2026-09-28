@@ -32,29 +32,14 @@ var (
 // Wraps the normal configure function, but also gives you access to change the User Function, which is called upon login.
 // It is used to create or update a user.
 // The check middleware may be nil, in which case a default is used. Otherwise should be a valid gin middleware, calling c.Next() if okay to proceed.
-func ConfigureFull(
-	r *gin.Engine,
-	app_url string,
-	default_redirect string,
-	user_function UserFunc,
-	stubs_on_unconfigured bool,
-	use_custom_check_middleware bool,
-	check_middleware func(c *gin.Context),
-) {
+func ConfigureFull(r *gin.Engine, app_url string, default_redirect string, user_function UserFunc, stubs_on_unconfigured bool, check_middleware func(c *gin.Context)) {
 	userFunc = user_function
-	Configure(r, app_url, default_redirect, stubs_on_unconfigured, use_custom_check_middleware, check_middleware)
+	Configure(r, app_url, default_redirect, stubs_on_unconfigured, check_middleware)
 }
 
 // Configure and set up the login SDK
 // The check middleware may be nil, in which case a default is used. Otherwise should be a valid gin middleware, calling c.Next() if okay to proceed.
-func Configure(
-	r *gin.Engine,
-	app_url string,
-	default_redirect string,
-	stubs_on_unconfigured bool,
-	use_custom_check_middleware bool,
-	check_middleware func(c *gin.Context),
-) {
+func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool, check_middleware func(c *gin.Context)) {
 	issuer := os.Getenv("OIDC_ISSUER")
 	clientID := os.Getenv("OIDC_CLIENT_ID")
 	clientSecret := os.Getenv("OIDC_CLIENT_SECRET")
@@ -63,7 +48,7 @@ func Configure(
 	if issuer == "" || clientID == "" || clientSecret == "" {
 		if stubs_on_unconfigured {
 			log.Println("[JHID] WARNING: OIDC not set up due to missing environment variables. Falling back to stubs")
-			startStubs(r)
+			startStubs(r, check_middleware)
 			return
 		} else {
 			log.Fatal("[JHID] One or more requried environment variables are missing. See docs for more information")
@@ -87,8 +72,7 @@ func Configure(
 
 	r.GET("/auth/v2/login", loginHandler)
 	r.GET("/auth/v2/verify", callbackHandler)
-	check_finalizer := func(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) }
-	if !use_custom_check_middleware {
+	if check_middleware == nil {
 		r.GET("/auth/v2/check", EnsureLogin(false), check_finalizer)
 	} else {
 		log.Println("[JHID] Custom check middleware enabled")
@@ -98,6 +82,8 @@ func Configure(
 
 	log.Println("[JHID] Configured successfully")
 }
+
+func check_finalizer(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) }
 
 func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -7,9 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func startStubs(r *gin.Engine) {
+func startStubs(r *gin.Engine, check_middleware func(c *gin.Context)) {
 	r.GET("/auth/v2/login", stubsHandler)
 	r.GET("/auth/v2/verify", stubsHandler)
+	if check_middleware == nil {
+		r.GET("/auth/v2/check", EnsureLogin(false), check_finalizer)
+	} else {
+		log.Println("[JHID] Custom check middleware enabled")
+		r.GET("/auth/v2/check", EnsureLogin(false), check_middleware, check_finalizer)
+	}
 	r.GET("/auth/v2/check", EnsureLogin(false), func(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) })
 	r.GET("/auth/v2/logout", logoutHandler)
 }
