@@ -76,6 +76,7 @@ func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_
 	if check_middleware == nil {
 		r.GET("/auth/v2/check", EnsureLogin(false), check_finalizer)
 	} else {
+		log.Println("[JHID] Custom check middleware enabled")
 		r.GET("/auth/v2/check", EnsureLogin(false), check_middleware, check_finalizer)
 	}
 	r.GET("/auth/v2/logout", logoutHandler)
