@@ -31,12 +31,14 @@ var (
 
 // Wraps the normal configure function, but also gives you access to change the User Function, which is called upon login.
 // It is used to create or update a user.
+// The check middleware may be nil, in which case a default is used. Otherwise should be a valid gin middleware, calling c.Next() if okay to proceed.
 func ConfigureFull(r *gin.Engine, app_url string, default_redirect string, user_function UserFunc, stubs_on_unconfigured bool, check_middleware *func(c *gin.Context)) {
 	userFunc = user_function
 	Configure(r, app_url, default_redirect, stubs_on_unconfigured, check_middleware)
 }
 
 // Configure and set up the login SDK
+// The check middleware may be nil, in which case a default is used. Otherwise should be a valid gin middleware, calling c.Next() if okay to proceed.
 func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_unconfigured bool, check_middleware *func(c *gin.Context)) {
 	issuer := os.Getenv("OIDC_ISSUER")
 	clientID := os.Getenv("OIDC_CLIENT_ID")
