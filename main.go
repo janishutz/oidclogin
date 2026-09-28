@@ -56,11 +56,11 @@ func Configure(r *gin.Engine, app_url string, default_redirect string, stubs_on_
 	}
 
 	provider, err := oidc.NewProvider(context.Background(), issuer)
-	verifier = *provider.Verifier(&oidc.Config{ClientID: clientID})
-
 	if err != nil {
 		log.Fatal("[JHID] Provider resolution failed with error", err)
 	}
+
+	verifier = *provider.Verifier(&oidc.Config{ClientID: clientID})
 
 	config = oauth2.Config{
 		ClientID:     clientID,
