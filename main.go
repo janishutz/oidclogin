@@ -88,7 +88,7 @@ func Configure(
 	r.GET("/auth/v2/login", loginHandler)
 	r.GET("/auth/v2/verify", callbackHandler)
 	check_finalizer := func(ctx *gin.Context) { ctx.JSON(200, gin.H{"success": "true"}) }
-	if use_custom_check_middleware {
+	if !use_custom_check_middleware {
 		r.GET("/auth/v2/check", EnsureLogin(false), check_finalizer)
 	} else {
 		log.Println("[JHID] Custom check middleware enabled")
