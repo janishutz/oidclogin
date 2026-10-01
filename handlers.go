@@ -35,7 +35,6 @@ func callbackHandler(c *gin.Context) {
 
 	if c.Query("state") != state || codeVerifier == nil {
 		log.Println("State invalid or verifier was not stored")
-		// TODO: Proper pages
 		c.HTML(500, "oidcerror.tmpl", gin.H{
 			"error": "ERR_INVALID_STATE",
 		})
@@ -92,7 +91,7 @@ func callbackHandler(c *gin.Context) {
 
 	// Verify NONCE
 	if nonce != claims.Nonce {
-		log.Println("Token verificcation failed", err)
+		log.Println("Token verificcation failed (none missing)")
 		c.HTML(500, "oidcerror.tmpl", gin.H{
 			"error": "ERR_AUTH",
 		})
@@ -102,8 +101,6 @@ func callbackHandler(c *gin.Context) {
 
 	if userFunc != nil {
 		userFunc(claims.Uid, claims.Name, claims.Email)
-	} else {
-		log.Println("[JHID] WARNING: No user function defined")
 	}
 
 	// Clear session data of oauth related state
@@ -115,6 +112,13 @@ func callbackHandler(c *gin.Context) {
 
 	session.Set("jhid_auth", true)
 	session.Set("jhid_uid", claims.Uid)
+	session.Options(sessions.Options{
+		Path:     "/",
+		SameSite: sameSiteMode,
+		HttpOnly: true,
+		Secure:   prod,
+		MaxAge:   172800, // Expires in 2 days
+	})
 	session.Save()
 
 	if redir != nil {
