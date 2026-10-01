@@ -91,7 +91,7 @@ func callbackHandler(c *gin.Context) {
 
 	// Verify NONCE
 	if nonce != claims.Nonce {
-		log.Println("Token verificcation failed (none missing)")
+		log.Println("Token verification failed (nonce missing)")
 		c.HTML(500, "oidcerror.tmpl", gin.H{
 			"error": "ERR_AUTH",
 		})
