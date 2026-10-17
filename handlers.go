@@ -100,7 +100,7 @@ func callbackHandler(c *gin.Context) {
 	}
 
 	if userFunc != nil {
-		userFunc(claims.Uid, claims.Name, claims.Email)
+		userFunc(claims.Uid, claims.Name, claims.Email, c)
 	}
 
 	// Clear session data of oauth related state

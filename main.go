@@ -21,7 +21,7 @@ func createRandomString(n int) (string, error) {
 	return base64.URLEncoding.EncodeToString(s), nil
 }
 
-type UserFunc func(userid string, name string, email string)
+type UserFunc func(userid string, name string, email string, c *gin.Context)
 
 var (
 	config          oauth2.Config
