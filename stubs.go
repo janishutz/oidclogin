@@ -23,7 +23,7 @@ func stubsHandler(c *gin.Context) {
 	redir := c.Query("returnTo")
 	session := sessions.Default(c)
 	if userFunc != nil {
-		userFunc("stubs", "Stubs User", "example@example.com")
+		userFunc("stubs", "Stubs User", "example@example.com", c)
 	} else {
 		log.Println("[JHID] WARNING: No user function defined")
 	}
